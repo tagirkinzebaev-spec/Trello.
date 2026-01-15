@@ -1,0 +1,109 @@
+// ER-диаграмма базы данных Telegram Task Board Mini App
+// Формат DBML для dbdiagram.io
+
+Table users {
+  id serial [primary key]
+  telegram_id bigint [unique, not null]
+  username varchar(255)
+  first_name varchar(255)
+  last_name varchar(255)
+  avatar_url text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Таблица пользователей системы'
+}
+
+Table boards {
+  id uuid [primary key, default: `uuid_generate_v4()`]
+  title varchar(100) [not null]
+  description text
+  owner_id integer [ref: > users.id, note: 'Владелец доски']
+  is_archived boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Таблица досок задач'
+}
+
+Table columns {
+  id uuid [primary key, default: `uuid_generate_v4()`]
+  title varchar(100) [not null]
+  board_id uuid [ref: > boards.id, note: 'Доска, к которой принадлежит колонка']
+  position integer [not null]
+  color varchar(20) [default: 'blue']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Таблица колонок в досках'
+}
+
+Table cards {
+  id uuid [primary key, default: `uuid_generate_v4()`]
+  title varchar(200) [not null]
+  description text
+  column_id uuid [ref: > columns.id, note: 'Колонка, к которой принадлежит карточка']
+  position integer [not null]
+  due_date date
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Таблица карточек задач'
+}
+
+Table checklist_items {
+  id uuid [primary key, default: `uuid_generate_v4()`]
+  card_id uuid [ref: > cards.id, note: 'Карточка, к которой принадлежит пункт']
+  text text [not null]
+  completed boolean [default: false]
+  position integer [not null]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Таблица пунктов чек-листов'
+}
+
+Table comments {
+  id uuid [primary key, default: `uuid_generate_v4()`]
+  card_id uuid [ref: > cards.id, note: 'Карточка, к которой принадлежит комментарий']
+  user_id integer [ref: > users.id, note: 'Пользователь, оставивший комментарий']
+  text text [not null]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Таблица комментариев к карточкам'
+}
+
+Table subscriptions {
+  id serial [primary key]
+  user_id integer [ref: > users.id, unique, note: 'Пользователь, которому принадлежит подписка']
+  status varchar(20) [not null, default: 'trial']
+  type varchar(20) [not null, default: 'monthly']
+  trial_started_at timestamp
+  trial_ends_at timestamp
+  subscription_started_at timestamp
+  subscription_ends_at timestamp
+  is_admin boolean [default: false]
+  payment_id varchar(255)
+  payment_status varchar(20)
+  payment_amount decimal(10, 2)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  Note: 'Таблица подписок пользователей'
+}
+
+Table board_members {
+  board_id uuid [ref: > boards.id, note: 'Доска, к которой добавлен участник']
+  user_id integer [ref: > users.id, note: 'Участник доски']
+  role varchar(20) [not null, default: 'viewer', note: 'Роль: owner, editor, viewer']
+  invited_by integer [ref: > users.id, note: 'Кто пригласил участника']
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Таблица участников досок для совместной работы'
+  
+  indexes {
+    (board_id, user_id) [pk]
+    board_id
+    user_id
+  }
+}
+
